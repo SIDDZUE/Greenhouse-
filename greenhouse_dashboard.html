@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Greenhouse Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,500;0,700;1,300&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --surface2: #1c2430;
+  --border:   #30363d;
+  --text:     #e6edf3;
+  --muted:    #8b949e;
+  --green:    #3fb950;
+  --green-dim:#1a4a24;
+  --blue:     #58a6ff;
+  --blue-dim: #0c2a4a;
+  --amber:    #d29922;
+  --amber-dim:#3d2c00;
+  --red:      #f85149;
+  --red-dim:  #4a1318;
+  --teal:     #39c5cf;
+  --teal-dim: #0a2e32;
+  --r:        10px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0;
+}
+/* ── Header ── */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo {
+  font-family: 'Space Mono', monospace;
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.3)} }
+.conn-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all .2s;
+}
+.conn-badge.connected { color: var(--green); border-color: var(--green); background: var(--green-dim); }
+.conn-badge.disconnected { color: var(--red); border-color: var(--red); background: var(--red-dim); }
+.conn-badge.connecting { color: var(--amber); border-color: var(--amber); background: var(--amber-dim); }
+/* ── Connect bar ── */
+#connect-bar {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+#connect-bar label { font-size: 12px; color: var(--muted); font-family: 'Space Mono', monospace; }
+#ip-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  width: 220px;
+  outline: none;
+  transition: border-color .2s;
+}
+#ip-input:focus { border-color: var(--teal); }
+.btn {
+  padding: 7px 18px;
+  border-radius: 6px;
+  border: 1px solid;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-teal  { background: var(--teal-dim);  border-color: var(--teal);  color: var(--teal); }
+.btn-teal:hover  { background: #0d3b3e; }
+.btn-red   { background: var(--red-dim);   border-color: var(--red);   color: var(--red); }
+.btn-red:hover   { background: #5a1a1e; }
+.btn-green { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.btn-green:hover { background: #1e5a28; }
+.btn-amber { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+/* ── Layout ── */
+main { padding: 28px 32px; max-width: 1300px; margin: 0 auto; }
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 20px;
+  transition: border-color .2s;
+}
+.card:hover { border-color: #484f58; }
+.card-label {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  margin-bottom: 8px;
+}
+.card-value {
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 4px;
+  transition: color .4s;
+}
+.card-unit { font-size: 18px; font-weight: 300; color: var(--muted); }
+.card-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+/* ── Status indicator ── */
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background .3s;
+}
+.dot.on  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.dot.off { background: var(--border); }
+.dot.warn { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+/* ── Gauge ── */
+.gauge-wrap { position: relative; width: 120px; height: 65px; margin: 8px auto 0; }
+.gauge-svg { overflow: visible; }
+/* ── Control panel ── */
+.ctrl-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 20px; }
+.ctrl-title { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); font-family: 'Space Mono', monospace; margin-bottom: 16px; }
+.ctrl-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.ctrl-row:last-child { margin-bottom: 0; }
+.ctrl-name { font-size: 14px; font-weight: 500; }
+.ctrl-desc { font-size: 11px; color: var(--muted); }
+/* Toggle switch */
+.toggle { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: var(--border);
+  border-radius: 13px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.toggle input:checked + .toggle-track { background: var(--green); }
+.toggle-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: white;
+  transition: transform .2s;
+  pointer-events: none;
+}
+.toggle input:checked ~ .toggle-thumb { transform: translateX(20px); }
+/* ── Threshold sliders ── */
+.threshold-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 20px; }
+.slider-row { margin-bottom: 16px; }
+.slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.slider-label { font-size: 13px; font-weight: 500; }
+.slider-val { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--teal); }
+input[type=range] {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--teal);
+  cursor: pointer;
+}
+/* ── Log ── */
+.log-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.log-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.log-title { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); font-family: 'Space Mono', monospace; }
+#log-list {
+  padding: 12px 20px;
+  height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column-reverse;
+}
+.log-entry {
+  display: flex;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px solid #1c2430;
+  font-size: 12px;
+  font-family: 'Space Mono', monospace;
+}
+.log-time { color: var(--muted); flex-shrink: 0; }
+.log-msg  { color: var(--text); }
+.log-msg.alert { color: var(--amber); }
+.log-msg.error { color: var(--red); }
+.log-msg.ok    { color: var(--green); }
+/* ── Alert banner ── */
+#alert-banner {
+  display: none;
+  background: var(--amber-dim);
+  border: 1px solid var(--amber);
+  border-radius: 8px;
+  padding: 10px 20px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--amber);
+  font-family: 'Space Mono', monospace;
+}
+/* ── Charts section ── */
+.chart-wrap { position: relative; height: 200px; }
+/* ── History mini-sparkline ── */
+.sparkline { width: 100%; height: 40px; margin-top: 10px; }
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  main { padding: 16px; }
+  header, #connect-bar { padding: 12px 16px; }
+}
+@media (max-width: 500px) {
+  .grid-4 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot" id="pulse-dot"></div>
+    GREENHOUSE.IO
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span style="font-size:12px;color:var(--muted);font-family:'Space Mono',monospace" id="last-update">—</span>
+    <div class="conn-badge disconnected" id="conn-badge" onclick="toggleConnPanel()">● DISCONNECTED</div>
+  </div>
+</header>
+
+<div id="connect-bar">
+  <label>ESP32 IP:</label>
+  <input id="ip-input" type="text" value="192.168.1.100" placeholder="e.g. 192.168.4.1"/>
+  <button class="btn btn-teal" onclick="connectWS()">Connect</button>
+  <button class="btn btn-red" onclick="disconnectWS()">Disconnect</button>
+  <span style="font-size:11px;color:var(--muted);margin-left:8px">WebSocket port 81 · HTTP port 80</span>
+</div>
+
+<main>
+  <div id="alert-banner" id="alert-banner">⚠ <span id="alert-text"></span></div>
+
+  <!-- Sensor cards -->
+  <div class="grid-4">
+    <div class="card" id="card-temp">
+      <div class="card-label">Temperature</div>
+      <div class="card-value" id="val-temp" style="color:var(--amber)">--<span class="card-unit">°C</span></div>
+      <div class="card-sub" id="sub-temp">Waiting for data…</div>
+      <canvas class="sparkline" id="spark-temp"></canvas>
+    </div>
+    <div class="card" id="card-humid">
+      <div class="card-label">Humidity</div>
+      <div class="card-value" id="val-humid" style="color:var(--blue)">--<span class="card-unit">%</span></div>
+      <div class="card-sub" id="sub-humid">Waiting for data…</div>
+      <canvas class="sparkline" id="spark-humid"></canvas>
+    </div>
+    <div class="card" id="card-soil">
+      <div class="card-label">Soil Moisture</div>
+      <div class="card-value" id="val-soil" style="color:var(--green)">--<span class="card-unit">%</span></div>
+      <div class="card-sub" id="sub-soil">Waiting for data…</div>
+      <canvas class="sparkline" id="spark-soil"></canvas>
+    </div>
+    <div class="card" id="card-pir">
+      <div class="card-label">Motion / PIR</div>
+      <div class="card-value" id="val-pir" style="font-size:28px;padding-top:8px">IDLE</div>
+      <div class="card-sub">Pest / intrusion sensor</div>
+      <div class="status-row">
+        <div class="dot off" id="dot-pir"></div>
+        <span style="font-size:12px;color:var(--muted)" id="pir-label">No motion detected</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actuator status + controls -->
+  <div class="grid-3">
+    <!-- Fan -->
+    <div class="ctrl-card">
+      <div class="ctrl-title">Ventilation</div>
+      <div class="ctrl-row">
+        <div>
+          <div class="ctrl-name">Exhaust Fan</div>
+          <div class="ctrl-desc">Relay 1 · GPIO26</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-fan" onchange="sendCmd({fan:this.checked})"/>
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div class="ctrl-row">
+        <div>
+          <div class="ctrl-name">Vent Flap (Servo)</div>
+          <div class="ctrl-desc">SG90 · GPIO13</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-vent" onchange="sendCmd({vent:this.checked})"/>
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px">
+          <span>Vent angle</span><span id="vent-angle-val" style="font-family:'Space Mono',monospace;color:var(--teal)">0°</span>
+        </div>
+        <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+          <div id="vent-bar" style="height:100%;background:var(--teal);width:0%;transition:width .5s;border-radius:2px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pump -->
+    <div class="ctrl-card">
+      <div class="ctrl-title">Irrigation</div>
+      <div class="ctrl-row">
+        <div>
+          <div class="ctrl-name">Water Pump</div>
+          <div class="ctrl-desc">Relay 2 · GPIO27</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggle-pump" onchange="sendCmd({pump:this.checked})"/>
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div style="margin-top:14px;padding:12px;background:var(--surface2);border-radius:8px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-family:'Space Mono',monospace">AUTO RULE</div>
+        <div style="font-size:12px;line-height:1.7">
+          Pump ON when soil &lt; <span id="disp-dry" style="color:var(--amber)">--</span> ADC<br/>
+          Auto stops after 10 seconds<br/>
+          Stops early if soil gets wet
+        </div>
+      </div>
+      <div class="status-row" style="margin-top:12px">
+        <div class="dot off" id="dot-pump"></div>
+        <span style="font-size:12px;color:var(--muted)" id="pump-label">Pump idle</span>
+      </div>
+    </div>
+
+    <!-- Mode + override -->
+    <div class="ctrl-card">
+      <div class="ctrl-title">Mode</div>
+      <div style="padding:14px;border-radius:8px;background:var(--surface2);margin-bottom:12px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px;font-family:'Space Mono',monospace">ACTIVE MODE</div>
+        <div id="mode-display" style="font-size:20px;font-weight:700;color:var(--green)">AUTO</div>
+        <div id="mode-sub" style="font-size:12px;color:var(--muted);margin-top:4px">Pot below midpoint</div>
+      </div>
+      <div class="status-row">
+        <div class="dot off" id="dot-fan"></div>
+        <span style="font-size:12px;color:var(--muted)" id="fan-label">Fan: OFF</span>
+      </div>
+      <div class="status-row" style="margin-top:6px">
+        <div class="dot off" id="dot-vent"></div>
+        <span style="font-size:12px;color:var(--muted)" id="vent-label">Vent: CLOSED</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thresholds + log -->
+  <div class="grid-2">
+    <div class="threshold-card">
+      <div class="ctrl-title" style="margin-bottom:16px">Automation thresholds</div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Temp high (fan ON)</span>
+          <span class="slider-val" id="sv-tempHigh">32°C</span>
+        </div>
+        <input type="range" min="20" max="50" value="32" id="sl-tempHigh" oninput="updateSlider('tempHigh',this.value,'°C')"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Humidity high</span>
+          <span class="slider-val" id="sv-humidHigh">85%</span>
+        </div>
+        <input type="range" min="40" max="100" value="85" id="sl-humidHigh" oninput="updateSlider('humidHigh',this.value,'%')"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Humidity low (alert)</span>
+          <span class="slider-val" id="sv-humidLow">40%</span>
+        </div>
+        <input type="range" min="10" max="70" value="40" id="sl-humidLow" oninput="updateSlider('humidLow',this.value,'%')"/>
+      </div>
+      <div class="slider-row" style="margin-bottom:0">
+        <div class="slider-header">
+          <span class="slider-label">Soil dry threshold</span>
+          <span class="slider-val" id="sv-moistDry">2500 ADC</span>
+        </div>
+        <input type="range" min="500" max="4095" value="2500" id="sl-moistDry" oninput="updateSlider('moistDry',this.value,' ADC')"/>
+      </div>
+      <button class="btn btn-teal" style="margin-top:16px;width:100%" onclick="sendThresholds()">Apply Thresholds</button>
+    </div>
+
+    <div class="log-wrap">
+      <div class="log-header">
+        <span class="log-title">Event log</span>
+        <button class="btn btn-amber" style="font-size:11px;padding:4px 12px" onclick="clearLog()">Clear</button>
+      </div>
+      <div id="log-list"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ── State ──────────────────────────────────────────────────
+let ws = null;
+let history = { temp:[], humid:[], soil:[] };
+const MAX_HIST = 40;
+
+// ── WebSocket ──────────────────────────────────────────────
+function connectWS() {
+  const ip = document.getElementById('ip-input').value.trim();
+  if (!ip) return;
+  const url = 'ws://' + ip + ':81';
+  setConnBadge('connecting', '◌ CONNECTING');
+  log('Connecting to ' + url, 'alert');
+  try {
+    ws = new WebSocket(url);
+    ws.onopen = () => {
+      setConnBadge('connected', '● CONNECTED');
+      log('Connected to ' + ip, 'ok');
+    };
+    ws.onclose = () => {
+      setConnBadge('disconnected', '● DISCONNECTED');
+      log('Connection closed', 'error');
+    };
+    ws.onerror = (e) => {
+      setConnBadge('disconnected', '● ERROR');
+      log('WebSocket error', 'error');
+    };
+    ws.onmessage = (e) => {
+      try { updateDashboard(JSON.parse(e.data)); } catch {}
+    };
+  } catch(err) {
+    setConnBadge('disconnected', '● FAILED');
+    log('Failed: ' + err.message, 'error');
+  }
+}
+
+function disconnectWS() {
+  if (ws) { ws.close(); ws = null; }
+}
+
+function sendCmd(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(obj));
+  } else {
+    log('Not connected – command not sent', 'error');
+  }
+}
+
+// ── Update Dashboard ────────────────────────────────────────
+function updateDashboard(d) {
+  const now = new Date().toLocaleTimeString();
+  document.getElementById('last-update').textContent = now;
+
+  // Temperature
+  const t = d.temperature.toFixed(1);
+  el('val-temp').innerHTML = t + '<span class="card-unit">°C</span>';
+  const tc = d.temperature > 32 ? 'var(--red)' : d.temperature > 28 ? 'var(--amber)' : 'var(--green)';
+  el('val-temp').style.color = tc;
+  el('sub-temp').textContent = d.temperature > d.tempHigh ? '⚠ Above limit' :
+    d.temperature < d.tempLow ? 'Below min' : 'Normal range';
+
+  // Humidity
+  const h = d.humidity.toFixed(1);
+  el('val-humid').innerHTML = h + '<span class="card-unit">%</span>';
+  const hc = d.humidity > 85 ? 'var(--red)' : d.humidity < 40 ? 'var(--amber)' : 'var(--blue)';
+  el('val-humid').style.color = hc;
+  el('sub-humid').textContent = d.humidity > d.humidHigh ? '⚠ Too humid' :
+    d.humidity < d.humidLow ? '⚠ Too dry' : 'Good range';
+
+  // Soil
+  const s = d.soilPct;
+  el('val-soil').innerHTML = s + '<span class="card-unit">%</span>';
+  const sc = s < 30 ? 'var(--red)' : s < 50 ? 'var(--amber)' : 'var(--green)';
+  el('val-soil').style.color = sc;
+  el('sub-soil').textContent = s < 30 ? '⚠ Very dry – pump may activate' : s > 80 ? 'Saturated' : 'Adequate';
+  el('disp-dry').textContent = d.moistDry;
+
+  // PIR
+  el('val-pir').textContent = d.pirTriggered ? 'ALERT' : 'IDLE';
+  el('val-pir').style.color = d.pirTriggered ? 'var(--red)' : 'var(--text)';
+  setDot('dot-pir', d.pirTriggered ? 'warn' : 'off');
+  el('pir-label').textContent = d.pirTriggered ? '⚠ Motion detected!' : 'No motion detected';
+
+  // Actuators
+  setToggle('toggle-fan', d.fanOn);
+  setToggle('toggle-pump', d.pumpOn);
+  setToggle('toggle-vent', d.ventOpen);
+
+  setDot('dot-fan', d.fanOn ? 'on' : 'off');
+  el('fan-label').textContent = 'Fan: ' + (d.fanOn ? 'ON' : 'OFF');
+  setDot('dot-vent', d.ventOpen ? 'on' : 'off');
+  el('vent-label').textContent = 'Vent: ' + (d.ventOpen ? 'OPEN' : 'CLOSED');
+  setDot('dot-pump', d.pumpOn ? 'on' : 'off');
+  el('pump-label').textContent = 'Pump: ' + (d.pumpOn ? 'RUNNING' : 'Idle');
+
+  // Vent angle
+  el('vent-angle-val').textContent = d.ventAngle + '°';
+  el('vent-bar').style.width = (d.ventAngle / 180 * 100) + '%';
+
+  // Mode
+  if (d.manualMode) {
+    el('mode-display').textContent = 'MANUAL';
+    el('mode-display').style.color = 'var(--amber)';
+    el('mode-sub').textContent = 'Pot above midpoint';
+  } else {
+    el('mode-display').textContent = 'AUTO';
+    el('mode-display').style.color = 'var(--green)';
+    el('mode-sub').textContent = 'Pot below midpoint';
+  }
+
+  // Sliders sync
+  syncSlider('tempHigh', d.tempHigh, '°C');
+  syncSlider('humidHigh', d.humidHigh, '%');
+  syncSlider('humidLow', d.humidLow, '%');
+  syncSlider('moistDry', d.moistDry, ' ADC');
+
+  // Alerts
+  if (d.alerts && d.alerts.trim()) {
+    el('alert-banner').style.display = 'block';
+    el('alert-text').textContent = d.alerts.trim();
+    log('ALERT: ' + d.alerts.trim(), 'alert');
+  } else {
+    el('alert-banner').style.display = 'none';
+  }
+
+  // History + sparklines
+  pushHistory('temp', d.temperature);
+  pushHistory('humid', d.humidity);
+  pushHistory('soil', d.soilPct);
+  drawSparkline('spark-temp', history.temp, '#d29922');
+  drawSparkline('spark-humid', history.humid, '#58a6ff');
+  drawSparkline('spark-soil', history.soil, '#3fb950');
+}
+
+// ── History ─────────────────────────────────────────────────
+function pushHistory(key, val) {
+  history[key].push(val);
+  if (history[key].length > MAX_HIST) history[key].shift();
+}
+
+// ── Sparkline canvas ────────────────────────────────────────
+function drawSparkline(id, data, color) {
+  const c = document.getElementById(id);
+  if (!c || data.length < 2) return;
+  const ctx = c.getContext('2d');
+  const W = c.offsetWidth || 200, H = 40;
+  c.width = W; c.height = H;
+  ctx.clearRect(0, 0, W, H);
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = (max - min) || 1;
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
+  data.forEach((v, i) => {
+    const x = (i / (data.length - 1)) * W;
+    const y = H - ((v - min) / range) * (H - 6) - 3;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  // Fill area under line
+  const lx = ((data.length - 1) / (data.length - 1)) * W;
+  const ly = H - ((data[data.length-1] - min) / range) * (H - 6) - 3;
+  ctx.lineTo(lx, H); ctx.lineTo(0, H); ctx.closePath();
+  ctx.fillStyle = color + '1a';
+  ctx.fill();
+}
+
+// ── Thresholds ──────────────────────────────────────────────
+function updateSlider(key, val, unit) {
+  el('sv-' + key).textContent = val + unit;
+}
+function syncSlider(key, val, unit) {
+  const sl = document.getElementById('sl-' + key);
+  if (sl && Math.abs(sl.value - val) > 0.5) {
+    sl.value = val;
+    el('sv-' + key).textContent = Math.round(val) + unit;
+  }
+}
+function sendThresholds() {
+  sendCmd({
+    tempHigh:  parseFloat(el_val('sl-tempHigh')),
+    humidHigh: parseFloat(el_val('sl-humidHigh')),
+    humidLow:  parseFloat(el_val('sl-humidLow')),
+    moistDry:  parseInt(el_val('sl-moistDry'))
+  });
+  log('Thresholds sent to ESP32', 'ok');
+}
+
+// ── Log ─────────────────────────────────────────────────────
+let logCount = 0;
+function log(msg, type = '') {
+  const t = new Date().toLocaleTimeString();
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML = `<span class="log-time">${t}</span><span class="log-msg ${type}">${msg}</span>`;
+  const list = document.getElementById('log-list');
+  list.insertBefore(entry, list.firstChild);
+  if (++logCount > 100) list.lastChild && list.removeChild(list.lastChild);
+}
+function clearLog() { document.getElementById('log-list').innerHTML = ''; logCount = 0; }
+
+// ── Helpers ─────────────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+function el_val(id) { return document.getElementById(id).value; }
+function setDot(id, state) {
+  const d = document.getElementById(id);
+  if (!d) return;
+  d.className = 'dot ' + state;
+}
+function setToggle(id, checked) {
+  const t = document.getElementById(id);
+  if (t) t.checked = checked;
+}
+function setConnBadge(state, text) {
+  const b = document.getElementById('conn-badge');
+  b.className = 'conn-badge ' + state;
+  b.textContent = text;
+}
+function toggleConnPanel() {
+  const bar = document.getElementById('connect-bar');
+  bar.style.display = bar.style.display === 'none' ? '' : 'none';
+}
+
+// ── Demo mode (no ESP32 connected) ──────────────────────────
+function startDemo() {
+  log('Demo mode started – simulated data', 'alert');
+  let t = 0;
+  setInterval(() => {
+    t++;
+    const demo = {
+      temperature: 26 + Math.sin(t/10)*6 + (Math.random()-0.5),
+      humidity:    65 + Math.cos(t/8)*15 + (Math.random()-0.5)*2,
+      soilRaw:     2000 + Math.sin(t/15)*1000,
+      soilPct:     50 + Math.cos(t/15)*30,
+      pirTriggered: Math.random() > 0.95,
+      fanOn:        false,
+      pumpOn:       false,
+      ventOpen:     false,
+      ventAngle:    0,
+      manualMode:   false,
+      alerts:       '',
+      tempHigh: 32, tempLow: 18, humidHigh: 85, humidLow: 40, moistDry: 2500
+    };
+    demo.fanOn = demo.temperature > 32 || demo.humidity > 85;
+    demo.ventOpen = demo.fanOn;
+    demo.ventAngle = demo.ventOpen ? 90 : 0;
+    demo.pumpOn = demo.soilRaw > 2500;
+    let alerts = [];
+    if (demo.temperature > 32) alerts.push('TEMP_HIGH');
+    if (demo.humidity > 85) alerts.push('HUMID_HIGH');
+    if (demo.pirTriggered) alerts.push('MOTION_DETECTED');
+    demo.alerts = alerts.join(' ');
+    updateDashboard(demo);
+  }, 2000);
+}
+
+// Auto-start demo
+window.onload = () => {
+  log('Dashboard loaded', 'ok');
+  log('Enter ESP32 IP and click Connect — or view in Demo mode', '');
+  // Uncomment below to auto-start demo:
+  // startDemo();
+};
+
+document.getElementById('ip-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') connectWS();
+});
+
+// Demo button (add to page)
+const demoBtn = document.createElement('button');
+demoBtn.className = 'btn btn-amber';
+demoBtn.textContent = 'Demo Mode';
+demoBtn.onclick = startDemo;
+document.getElementById('connect-bar').appendChild(demoBtn);
+</script>
+</body>
+</html>
